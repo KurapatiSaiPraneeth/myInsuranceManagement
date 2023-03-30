@@ -1,0 +1,36 @@
+{% extends 'customer/customerbase.html' %}
+{% block content %}
+{%load static%}
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <style>
+
+  a:link {
+        text-decoration: none;
+      }
+
+  </style>
+</head>
+<h2 style="text-align:center;">Apply claim</h2>
+<form method="post" enctype="multipart/form-data" action="{% url 'submit-claim' %}">
+    {% csrf_token %}
+    <label for="policy">Policy:</label>
+    <input list="policies" id="policy" name="policy" required>
+    <datalist id="policies">
+        {% for p in policies %}
+        <option value="{{ p }}">
+        {% endfor %}
+    </datalist>
+    <label for="image">Doc upload:</label>
+    <input type="file" id="doc_upload" name="doc_upload" required>
+    <br>
+    <button type="submit">Submit</button>
+</form>
+<br><br><br><br>
+{% endblock content %}
