@@ -91,7 +91,11 @@ def apply_claim(request):
     customer = models.Customer.objects.get(user_id=request.user.id)
     policies = CMODEL.PolicyRecord.objects.filter(customer=customer)
     policy_names = CMODEL.Policy.objects.filter(id__in = [p.Policy_id for p in policies])
-    return render(request, 'customer/apply_claim.html', {'policies': policy_names, 'customer': customer})
+    response = render(request, 'customer/apply_claim.html', {'policies': policy_names, 'customer': customer})
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
 
 def apply_claim_view(request):
     customer = models.Customer.objects.get(user_id=request.user.id)
@@ -109,7 +113,6 @@ def claim_view(request):
     customer = models.Customer.objects.get(user_id=request.user.id)
     claim_details = CMODEL.Claim.objects.filter(customer=customer)
     return render(request, 'customer/claim.html', {'claims': claim_details, 'customer': customer})
-
 
 
 def ask_question_view(request):
@@ -141,4 +144,13 @@ def download_file(request, pk):
         return response
     else:
         return HttpResponse("File not found.")
+
+
+@login_required(login_url='customerlogin')
+def approve_auto_renew(request, customer_id, policy_id):
+    policy_record = CMODEL.PolicyRecord.objects.get(customer = customer_id, Policy = policy_id)
+    policy_record.auto_renew = True
+    policy_record.save()
+    context = {'message': 'Hello, Your Policy Auto renewal has been activated !!!'}
+    return render(request, 'customer/approve_auto_renew.html', context)
 

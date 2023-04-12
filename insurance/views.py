@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required,user_passes_test
 from django.conf import settings
 from datetime import date, timedelta
 from django.db.models import Q
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from django.contrib.auth.models import User
 from customer import models as CMODEL
 from customer import forms as CFORM
@@ -16,6 +16,10 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 
 from django.conf import settings
+
+from celery import shared_task
+from django.utils import timezone
+
 
 
 def home_view(request):
@@ -299,7 +303,12 @@ def approve_claim_request_view(request,pk):
     claimrecord.status='Approved'
     claimrecord.save()
     user = claimrecord.customer.user
-    send_notification_email(request, user)
+    email_subject = "Your Policy Claim Notification"
+    email_body_data = {
+        "user" : user,
+        "message" : "Your Claim has been approved !!!"
+    }
+    send_notification_email(email_subject, email_body_data)
     return redirect('admin-total_claim')
 
 
@@ -308,7 +317,12 @@ def disapprove_claim_request_view(request,pk):
     claimrecord.status='Disapproved'
     claimrecord.save()
     user = claimrecord.customer.user
-    send_notification_email(request, user)
+    email_subject = "Your Policy Claim Notification"
+    email_body_data = {
+        "user" : user,
+        "message" : "Your Claim has been disapproved !!!"
+    }
+    send_notification_email(email_subject, email_body_data)
     return redirect('admin-total_claim')
 
 def admin_view_approved_claim(request):
@@ -326,14 +340,57 @@ def admin_view_pending_claims(request):
     return render(request,'insurance/admin_total_claims.html',{'all_claims':claimrecords})
 
 
-def send_notification_email(request, user):
-    subject = 'Email Notification'
-    message = render_to_string('insurance/email_template.html', {'user': user})
+
+def send_notification_email(email_subject, email_body_data):
+    user = email_body_data.get("user")
+    email_body = render_to_string('insurance/email_template.html', email_body_data)
     from_email = settings.EMAIL_HOST_USER
-    recipient_list = [user.email]
-    success_count = send_mail(subject, message, from_email, recipient_list)
+    to_email = [user.email]
+    email = EmailMessage(email_subject, email_body, from_email, to_email)
+    email.content_subtype = 'html'
+    success_count = email.send()
     if success_count == 1:
         print('Email sent successfully')
     else:
         print('Email was not sent')
+
+
+# def send_notification_email(user):
+#     subject = 'Insurance Notification'
+#     message = render_to_string('insurance/email_template.html', {'user': user})
+#     from_email = settings.EMAIL_HOST_USER
+#     recipient_list = [user.email]
+#     success_count = send_mail(subject, message, from_email, recipient_list)
+#     if success_count == 1:
+#         print('Email sent successfully')
+#     else:
+#         print('Email was not sent')
+
+
+@shared_task
+def auto_renew_policies():
+    for policy in models.PolicyRecord.objects.all():
+
+        # calculate new end date and save
+        policy_tenure = policy.Policy.tenure
+        delta = policy.endDate - timezone.now().date()
+        days_between = delta.days
+        if policy.endDate < timezone.now().date():
+            if policy.auto_renew:
+                policy.endDate = timezone.now().date() + relativedelta(months=policy_tenure)
+            else:
+                policy.status = "Expired"
+            policy.save()
+        elif days_between < 10:
+            base_url = "http://127.0.0.1:8000"
+            email_subject = "Policy Auto Renewal Notification"
+            email_body_data = {
+                "user": policy.customer.user,
+                "message": "Your Insurance policy will expire soon !!!. Please click on below link to auto renew your policy.",
+                "notification_title": "Policy Auto Renewal Link !!!",
+                "customer_id": policy.customer.id,
+                "policy_id": policy.Policy.id,
+                "base_url": base_url
+            }
+            send_notification_email(email_subject, email_body_data)
 

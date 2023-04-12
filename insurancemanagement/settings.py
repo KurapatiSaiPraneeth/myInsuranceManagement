@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+from datetime import timedelta
 
 try:
     from django.contrib.messages import constants as messages
@@ -53,6 +54,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'widget_tweaks',
+    'celery',
+    'django_celery_results',
     'insurance',
     'customer',
 ]
@@ -98,30 +101,30 @@ WSGI_APPLICATION = 'insurancemanagement.wsgi.application'
 #     }
 # }
 
-#DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.mysql',
-#        'NAME': 'insurance-system',
-#        'USER': 'admin',
-#        'PASSWORD': 'Admin1234',
-#        'HOST': "database-1.cs98zrb9d9hk.us-east-2.rds.amazonaws.com",
-#        'PORT': '3306',
-#        'OPTIONS': {
-#            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-#        }
-#    }
-#}
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'myinsurance',
-        'USER': 'sai',
-        'PASSWORD': 'devpython',
-        'HOST': 'localhost',   # Or an IP Address that your DB is hosted on
-        'PORT': '3306',
-    }
+   'default': {
+       'ENGINE': 'django.db.backends.mysql',
+       'NAME': 'insurance-system',
+       'USER': 'admin',
+       'PASSWORD': 'Admin1234',
+       'HOST': "database-1.cs98zrb9d9hk.us-east-2.rds.amazonaws.com",
+       'PORT': '3306',
+       'OPTIONS': {
+           'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+       }
+   }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'myinsurance',
+#         'USER': 'sai',
+#         'PASSWORD': 'devpython',
+#         'HOST': 'localhost',   # Or an IP Address that your DB is hosted on
+#         'PORT': '3306',
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
@@ -181,3 +184,17 @@ EMAIL_HOST_PASSWORD = 'najrpzhdzszngiys' # host email password required
 # otherwise you will get SMTPAuthenticationError at /contactus
 # this process is required because google blocks apps authentication by default
 #EMAIL_RECEIVING_USER = ['to@gmail.com'] # email on which you will receive messages sent from website
+
+
+# Celery Configuration
+CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'django-cache'
+
+# Celery Beat Configuration
+CELERY_BEAT_SCHEDULE = {
+    'auto_renew_policies': {
+        'task': 'insurance.views.auto_renew_policies',
+        'schedule': timedelta(minutes=1),
+    },
+}
