@@ -20,5 +20,6 @@ urlpatterns = [
     path('question-history', views.question_history_view,name='question-history'),
 
     path('download/<int:pk>/', views.download_file, name='download_file'),
+    path('policy_auto_renewal/<int:customer_id>/<int:policy_id>', views.approve_auto_renew, name='approve_auto_renew'),
 
 ]

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
-
+from django.utils import timezone
+from dateutil.relativedelta import relativedelta
 from django.db import models
 from django.contrib.auth.models import User
 from customer.models import Customer
@@ -38,6 +39,7 @@ class PolicyRecord(models.Model):
     status = models.CharField(max_length=100, default='Pending')
     creation_date = models.DateField(auto_now=True)
     endDate = models.DateField(default=return_date_time)
+    auto_renew = models.BooleanField(default=False)
 
 
 class Question(models.Model):
@@ -55,3 +57,6 @@ class Claim(models.Model):
     status = models.CharField(max_length=100, default='Pending')
     proof_doc = models.FileField(upload_to='proofs/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+
+
